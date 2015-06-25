@@ -1,2 +1,1 @@
-# dna-alignment-pipeline
-DNA alignment pipeline tailored to IGMM compute cluster
+Alignment and variant calling pipeline designed for high throughput sequencing of genomic DNA, either whole genome or targeted. An adaptation of the Genome Analysis Toolkit Best Practices (https://www.broadinstitute.org/gatk/guide/best-practices?bpm=DNAseq) tailored to the University of Edinburgh's Institute of Genetics and Molecular Medicine compute cluster.
