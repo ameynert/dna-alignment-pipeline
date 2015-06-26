@@ -14,6 +14,7 @@ For a set of DNA high-throughput sequencing runs, aligns the reads using bwa mem
 Merges the alignments and marks duplicates with Picard. Does local re-alignment 
 around indels and score re-calibration with GATK. Generates the GVCF genotyping
 information for the sample. Output is a single indexed BAM file and a GVCF file,
+plus associated statistics.
 
 =cut
 
