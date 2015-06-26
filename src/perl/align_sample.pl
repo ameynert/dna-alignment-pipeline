@@ -12,8 +12,8 @@ Alison Meynert (alison.meynert@igmm.mrc.ac.uk)
 
 For a set of DNA high-throughput sequencing runs, aligns the reads using bwa mem.
 Merges the alignments and marks duplicates with Picard. Does local re-alignment 
-around indels and score re-calibration with GATK. Output is a single indexed BAM 
-file.
+around indels and score re-calibration with GATK. Generates the GVCF genotyping
+information for the sample. Output is a single indexed BAM file and a GVCF file,
 
 =cut
 
@@ -35,10 +35,11 @@ $0 [--help]
 	  e.g. ID:HWI-D00200_123_H8036ADXX_2,PU:HWI-D00200_123_H8036ADXX_2,PL:ILLUMINA,LB:Library,SM:Sample pair_1.sanfastq.gz pair_2.sanfastq.gz
 };
 
-# make sure ngsEnv.sh definitions are in place
-die "\$ngs_src_dir not defined" if (!$ENV{'ngs_src_dir'});
-my $ngs_src_dir = $ENV{'ngs_src_dir'};
 require("$ngs_src_dir/perl/utility.pl");
+# make sure environment variable definitions are in place
+die "\$hts_src_dir not defined" if (!$ENV{'hts_src_dir'});
+my $hts_src_dir = $ENV{'hts_src_dir'};
+require("$hts_src_dir/perl/utility.pl");
 
 my $help = 0;
 my $name;
@@ -56,75 +57,88 @@ if ($help || !$name || !$reads)
     exit(0);
 }
 
-# Java memory
-my $memStack="4g";
-
-# data areas
-my $path2Work = File::Temp->newdir(); 
-if ($ENV{'ngs_work_dir'})
+# use specified working directory if available, otherwise create temp directory
+my $path2Work;
+if ($ENV{'hts_work_dir'})
 {
-    $path2Work = $ENV{'ngs_work_dir'};
+    $path2Work = $ENV{'hts_work_dir'};
+}
+else
+{
+    $path2Work = File::Temp->newdir(); 
 }
 
-die "\$ngs_logs_dir not defined" if (!$ENV{'ngs_logs_dir'});
-my $path2Logs = $ENV{'ngs_logs_dir'};
+############### project directories ##################
+die "\$hts_logs_dir not defined" if (!$ENV{'hts_logs_dir'});
+my $path2Logs = $ENV{'hts_logs_dir'};
 
-die "\$ngs_reference_seq not defined" if (!$ENV{'ngs_reference_seq'});
-my $path2SeqIndex= $ENV{'ngs_reference_seq'};
+die "\$hts_runs_in_dir not defined" if (!$ENV{'hts_runs_in_dir'});
+my $path2Runs= $ENV{'hts_runs_in_dir'};
 
-die "\$ngs_runs_in_dir not defined" if (!$ENV{'ngs_runs_in_dir'});
-my $path2Runs= $ENV{'ngs_runs_in_dir'};
+die "\$hts_stats_dir not defined" if (!$ENV{'hts_stats_dir'});
+my $path2Stats = $ENV{'hts_stats_dir'};
 
-my $runsInOwnDir = 0;
-if (defined $ENV{'ngs_runs_in_own_dirs'}){
-    $runsInOwnDir = $ENV{'ngs_runs_in_own_dirs'};
+die "\$hts_bam_out_dir not defined" if (!$ENV{'hts_bam_out_dir'});
+my $path2Bam = $ENV{'hts_bam_out_dir'};
+
+die "\$hts_gvcf_dir not defined" if (!$ENV{'hts_gvcf_dir'});
+my $path2Gvcf = $ENV{'hts_gvcf_dir'};
+
+############### project options ##################
+my $runsInOwnDir;
+if (defined $ENV{'hts_runs_in_own_dirs'}) { $runsInOwnDir = $ENV{'hts_runs_in_own_dirs'}; }
+
+my $memStack = "2g";
+if (defined $ENV{'hts_java_memstack'}) { $memStack = $ENV{'hts_java_memstack'}; }
+
+my $useTargets = 0;
+if (defined $ENV{'hts_use_target_intervals'}) { $useTargets = $ENV{'hts_use_target_intervals'}; }
+
+my $targetOptions = "";
+if ($useTargets)
+{
+    die "\$hts_target_file not defined" if (!$ENV{'hts_target_file'});
+    my $path2Targets= $ENV{'hts_target_file'};
+
+    my $targetPadding = 0;
+    if (defined $ENV{'hts_target_interval_padding'}) { $targetPadding = $ENV{'hts_target_interval_padding'}; }
+
+    $targetOptions = "-L $path2Targets -ip $targetPadding";
 }
 
-die "\$ngs_stats_dir not defined" if (!$ENV{'ngs_stats_dir'});
-my $path2Stats = $ENV{'ngs_stats_dir'};
+############### external data ##################
+die "\$hts_reference_seq not defined" if (!$ENV{'hts_reference_seq'});
+my $path2SeqIndex= $ENV{'hts_reference_seq'};
 
-die "\$ngs_bam_out_dir not defined" if (!$ENV{'ngs_bam_out_dir'});
-my $path2Bam = $ENV{'ngs_bam_out_dir'};
+die "\$hts_dbsnp_file not defined" if (!$ENV{'hts_dbsnp_file'});
+my $path2Dbsnp= $ENV{'hts_dbsnp_file'};
 
-die "\$ngs_gvcf_dir not defined" if (!$ENV{'ngs_gvcf_dir'});
-my $path2Gvcf = $ENV{'ngs_gvcf_dir'};
-
-die "\$ngs_target_file not defined" if (!$ENV{'ngs_target_file'});
-my $path2Targets= $ENV{'ngs_target_file'};
-
-die "\$ngs_dbsnp_file not defined" if (!$ENV{'ngs_dbsnp_file'});
-my $path2Dbsnp= $ENV{'ngs_dbsnp_file'};
-
-die "\$ngs_known_indels_1 not defined" if (!$ENV{'ngs_known_indels_1'});
-my $path2KnownIndels= $ENV{'ngs_known_indels_1'};
+die "\$hts_known_indels_1 not defined" if (!$ENV{'hts_known_indels_1'});
+my $path2KnownIndels= $ENV{'hts_known_indels_1'};
 
 for (my $i = 2; $i <= 10; $i++)
 {
-    if ($ENV{"ngs_known_indels_$i"})
+    if ($ENV{"hts_known_indels_$i"})
     {
-	$path2KnownIndels .= sprintf(" -known %s", $ENV{"ngs_known_indels_$i"});
+	$path2KnownIndels .= sprintf(" -known %s", $ENV{"hts_known_indels_$i"});
     }
 }
 
-# paths to progs
-die "\$ngs_java_dir not defined\n" if (!$ENV{'ngs_java_dir'});
-my $path2Java = $ENV{'ngs_java_dir'};
+############### external software ##################
+die "\$hts_bwa_dir not defined\n" if (!$ENV{'hts_bwa_dir'});
+my $path2Bwa = $ENV{'hts_bwa_dir'};
 
-die "\$ngs_samtools_dir not defined\n" if (!$ENV{'ngs_samtools_dir'});
-my $path2Samtools = $ENV{'ngs_samtools_dir'};
+die "\$hts_samtools_dir not defined\n" if (!$ENV{'hts_samtools_dir'});
+my $path2Samtools = $ENV{'hts_samtools_dir'};
 
-die "\$ngs_picard_dir not defined" if (!$ENV{'ngs_picard_dir'});
-my $path2Picard= $ENV{'ngs_picard_dir'};
+die "\$hts_picard_dir not defined" if (!$ENV{'hts_picard_dir'});
+my $path2Picard= $ENV{'hts_picard_dir'};
 
-die "\$ngs_bwa_dir not defined\n" if (!$ENV{'ngs_bwa_dir'});
-my $path2Bwa = $ENV{'ngs_bwa_dir'};
+die "\$hts_gatk_dir not defined" if (!$ENV{'hts_gatk_dir'});
+my $path2Gatk= $ENV{'hts_gatk_dir'};
 
-die "\$ngs_gatk_dir not defined" if (!$ENV{'ngs_gatk_dir'});
-my $path2Gatk= $ENV{'ngs_gatk_dir'};
-
-# move to the working directory
-chdir($path2Work);
-
+# correctly generates the read path for input FASTQ files depending on samples
+# being in a shared directory or in one directory per sample
 sub read_path
 {
     my ($filename) = @_;
@@ -136,6 +150,9 @@ sub read_path
     }
     return $path;
 }
+
+# move to the working directory
+chdir($path2Work);
 
 # get the set of runs for this sample
 my $in_fh = new IO::File;
@@ -281,34 +298,34 @@ else
 }
 
 # mark duplicates with Picard
-execute("$path2Java/java -Xmx$memStack -jar $path2Picard/picard.jar MarkDuplicates INPUT=$name.raw.bam OUTPUT=$name.dedup.bam METRICS_FILE=$name.rmdup.metrics.txt ASSUME_SORTED=TRUE CREATE_INDEX=TRUE VALIDATION_STRINGENCY=SILENT &> $path2Logs/$name.markduplicates.log");
+execute("java -Xmx$memStack -jar $path2Picard/picard.jar MarkDuplicates INPUT=$name.raw.bam OUTPUT=$name.dedup.bam METRICS_FILE=$name.rmdup.metrics.txt ASSUME_SORTED=TRUE CREATE_INDEX=TRUE VALIDATION_STRINGENCY=SILENT &> $path2Logs/$name.markduplicates.log");
 execute("cp $name.rmdup.metrics.txt $path2Stats/");
 execute("rm $name.raw.bam* $name.rmdup.metrics.txt");
 
 # detect suspicious intervals
-execute("$path2Java/java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T RealignerTargetCreator -R $path2SeqIndex.fasta -L $path2Targets -known $path2KnownIndels -o $name.intervals -I $name.dedup.bam &> $path2Logs/$name.realignertargetcreator.log");
+execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T RealignerTargetCreator -R $path2SeqIndex.fasta $targetOptions -known $path2KnownIndels -o $name.intervals -I $name.dedup.bam &> $path2Logs/$name.realignertargetcreator.log");
 
 # re-align around indels (mate pair fixing is done on the fly)
-execute("$path2Java/java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T IndelRealigner -R $path2SeqIndex.fasta -known $path2KnownIndels -targetIntervals $name.intervals -I $name.dedup.bam -o $name.realigned.bam &> $path2Logs/$name.indelrealigner.log");
+execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T IndelRealigner -R $path2SeqIndex.fasta -known $path2KnownIndels $targetOptions -I $name.dedup.bam -o $name.realigned.bam &> $path2Logs/$name.indelrealigner.log");
 execute("cp $name.intervals $path2Stats/");
 execute("rm $name.dedup.bam* $name.intervals");
 
 # count covariates for base quality re-calibration
-execute("$path2Java/java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T BaseRecalibrator -R $path2SeqIndex.fasta -L $path2Targets -knownSites $path2Dbsnp -I $name.realigned.bam -o $name.recal.grp &> $path2Logs/$name.baserecalibrator.log");
+execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T BaseRecalibrator -R $path2SeqIndex.fasta $targetOptions -knownSites $path2Dbsnp -I $name.realigned.bam -o $name.recal.grp &> $path2Logs/$name.baserecalibrator.log");
         
 # apply re-calibration
-execute("$path2Java/java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T PrintReads -R $path2SeqIndex.fasta -BQSR $name.recal.grp -I $name.realigned.bam -o $name.recal.bam &> $path2Logs/$name.printreads.log");
+execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T PrintReads -R $path2SeqIndex.fasta -BQSR $name.recal.grp -I $name.realigned.bam -o $name.recal.bam &> $path2Logs/$name.printreads.log");
 execute("cp $name.recal.grp $path2Stats/");
 execute("cp $name.recal.ba* $path2Bam/");
 execute("rm $name.realigned* $name.recal.grp");
 
 # collect alignment metrics with Picard
-execute("$path2Java/java -Xmx$memStack -jar $path2Picard/picard.jar CollectAlignmentSummaryMetrics INPUT=$name.recal.bam OUTPUT=$name.alignment.metrics.txt ASSUME_SORTED=TRUE VALIDATION_STRINGENCY=SILENT &> $path2Logs/$name.alignmentmetrics.log");
+execute("java -Xmx$memStack -jar $path2Picard/picard.jar CollectAlignmentSummaryMetrics INPUT=$name.recal.bam OUTPUT=$name.alignment.metrics.txt ASSUME_SORTED=TRUE VALIDATION_STRINGENCY=SILENT &> $path2Logs/$name.alignmentmetrics.log");
 execute("cp $name.alignment.metrics.txt $path2Stats/");
 execute("rm $name.alignment.metrics.txt");
 
 # genotype sample
-execute("$path2Java/java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T HaplotypeCaller -R $path2SeqIndex.fasta -I $name.recal.bam -stand_call_conf 50.0 -stand_emit_conf 10.0 --emitRefConfidence GVCF --variant_index_type LINEAR --variant_index_parameter 128000 -o $name.g.vcf.gz -L $path2Targets -ip $targetPadding &> $path2Logs/$name.haplotypecaller.log");
+execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T HaplotypeCaller -R $path2SeqIndex.fasta -I $name.recal.bam -stand_call_conf 50.0 -stand_emit_conf 10.0 --emitRefConfidence GVCF --variant_index_type LINEAR --variant_index_parameter 128000 -o $name.g.vcf.gz $targetOptions &> $path2Logs/$name.haplotypecaller.log");
 execute("cp $name.g.vcf* $path2Gvcf/");
 
 # clean up
