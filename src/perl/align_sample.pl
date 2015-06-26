@@ -35,7 +35,6 @@ $0 [--help]
 	  e.g. ID:HWI-D00200_123_H8036ADXX_2,PU:HWI-D00200_123_H8036ADXX_2,PL:ILLUMINA,LB:Library,SM:Sample pair_1.sanfastq.gz pair_2.sanfastq.gz
 };
 
-require("$ngs_src_dir/perl/utility.pl");
 # make sure environment variable definitions are in place
 die "\$hts_src_dir not defined" if (!$ENV{'hts_src_dir'});
 my $hts_src_dir = $ENV{'hts_src_dir'};

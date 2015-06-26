@@ -1,9 +1,6 @@
 # define environment
 source /etc/profile.d/modules.sh
 module load apps/gcc/perl/5.14.1
-module load apps/gcc/mysql/5.5.12
-module load apps/gcc/python/2.7.1
-module load compilers/gcc/4.7.3
 
 # source code and working directories
 export hts_src_dir=/export/users/ameynert/exome_alignment/src
