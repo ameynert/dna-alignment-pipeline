@@ -36,11 +36,6 @@ $0 [--help]
 	  e.g. ID:HWI-D00200_123_H8036ADXX_2,PU:HWI-D00200_123_H8036ADXX_2,PL:ILLUMINA,LB:Library,SM:Sample pair_1.sanfastq.gz pair_2.sanfastq.gz
 };
 
-# make sure environment variable definitions are in place
-die "\$hts_src_dir not defined" if (!$ENV{'hts_src_dir'});
-my $hts_src_dir = $ENV{'hts_src_dir'};
-require("$hts_src_dir/perl/utility.pl");
-
 my $help = 0;
 my $name;
 my $reads;
@@ -149,6 +144,29 @@ sub read_path
 	$path = "$path2Runs/$name/$filename";
     }
     return $path;
+}
+
+# debug and verbose variables
+my $debug = 0;
+if (defined $ENV{'ngs_debug'}) { $debug = $ENV{'ngs_debug'}; }
+
+my $verbose = 0;
+if (defined $ENV{'verbose'}) { $debug = $ENV{'verbose'}; }                                                                                                                                                       
+# command execution with optional debugging
+sub execute
+{
+    my $command = shift;
+
+    if ($debug || $verbose)
+    {
+        my $date = `date`;
+        print "$date\n";
+        print "$command\n\n";
+    }
+    if (!$debug)
+    {
+        `$command`;
+    }
 }
 
 # move to the working directory

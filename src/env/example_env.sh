@@ -1,10 +1,10 @@
 # define environment
 source /etc/profile.d/modules.sh
 module load apps/gcc/perl/5.14.1
+module load apps/gcc/java/1.7.0_60
 
 # source code and working directories
 export hts_src_dir=/export/users/ameynert/exome_alignment/src
-export hts_external_dir=/export/users/ameynert/exome_alignment/external
 export hts_tmp_dir=/tmp # local directory on node
 
 # project directories
@@ -38,7 +38,16 @@ export hts_known_indels_1=$hts_gatk_bundle_dir/1000G_phase1.indels.$hts_referenc
 export hts_known_indels_2=$hts_gatk_bundle_dir/Mills_and_1000G_gold_standard.indels.$hts_reference_id.vcf
 
 # external software
-export hts_bwa_dir=$hts_external_dir/bwa-0.7.10
-export hts_samtools_dir=$hts_external_dir/samtools-1.1
-export hts_picard_dir=$hts_external_dir/picard-tools-1.126
-export hts_gatk_dir=$hts_external_dir/GenomeAnalysisTK-3.3-0
+export hts_external_dir=/opt/gridware/apps
+
+module load apps/gcc/BWA/0.7.10
+export hts_bwa_dir=$hts_external_dir/gcc/BWA/0.7.10/bin
+
+module load apps/gcc/samtools/1.1
+export hts_samtools_dir=$hts_external_dir/gcc/samtools/1.1/bin
+
+module load apps/java/picard/1.126
+export hts_picard_dir=$hts_external_dir/java/picard/1.126/bin
+
+module load apps/java/GenomeAnalysisTK/3.3-0
+export hts_gatk_dir=$hts_external_dir/java/GenomeAnalysisTK/3.3-0/bin
