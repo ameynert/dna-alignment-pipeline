@@ -98,7 +98,14 @@ if ($useTargets)
     my $targetPadding = 0;
     if (defined $ENV{'hts_target_interval_padding'}) { $targetPadding = $ENV{'hts_target_interval_padding'}; }
 
-    $targetOptions = "-L $path2Targets -ip $targetPadding";
+    if ($targetPadding)
+    {
+	$targetOptions = "-L $path2Targets -ip $targetPadding";
+    }
+    else
+    {
+	$targetOptions = "-L $path2Targets";
+    }
 }
 
 ############### external data ##################
