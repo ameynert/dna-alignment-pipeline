@@ -12,7 +12,7 @@ export hts_project_dir=/mnt/lustre2/ameynert/alignment
 export hts_runs_in_dir=$hts_project_dir/runs
 export hts_bam_in_dir=$hts_project_dir/bam
 export hts_bam_out_dir=$hts_project_dir/bam
-export hts_cov_dir=$hts_project_dir/coverage
+export hts_coverage_dir=$hts_project_dir/coverage
 export hts_stats_dir=$hts_project_dir/stats
 export hts_logs_dir=$hts_project_dir/logs
 export hts_gvcf_dir=$hts_project_dir/gvcf
@@ -26,6 +26,7 @@ export hts_java_memstack=4g
 export hts_use_target_intervals=1
 export hts_target_interval_padding=0
 export hts_target_file=$hts_project_dir/targets/targets.bed
+export hts_run_haplotype_caller=1
 
 # external data
 export hts_resources_dir=/mnt/lustre2/evolgen

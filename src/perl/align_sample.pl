@@ -76,9 +76,6 @@ my $path2Stats = $ENV{'hts_stats_dir'};
 die "\$hts_bam_out_dir not defined" if (!$ENV{'hts_bam_out_dir'});
 my $path2Bam = $ENV{'hts_bam_out_dir'};
 
-die "\$hts_gvcf_dir not defined" if (!$ENV{'hts_gvcf_dir'});
-my $path2Gvcf = $ENV{'hts_gvcf_dir'};
-
 ############### project options ##################
 my $runsInOwnDir;
 if (defined $ENV{'hts_runs_in_own_dirs'}) { $runsInOwnDir = $ENV{'hts_runs_in_own_dirs'}; }
@@ -86,10 +83,20 @@ if (defined $ENV{'hts_runs_in_own_dirs'}) { $runsInOwnDir = $ENV{'hts_runs_in_ow
 my $memStack = "2g";
 if (defined $ENV{'hts_java_memstack'}) { $memStack = $ENV{'hts_java_memstack'}; }
 
+my $runHaplotypeCaller = 0;
+if (defined $ENV{'hts_run_haplotype_caller'}) { $runHaplotypeCaller = $ENV{'hts_run_haplotype_caller'}; }
+my $path2Gvcf;
+if ($runHaplotypeCaller)
+{
+    die "\$hts_gvcf_dir not defined" if (!$ENV{'hts_gvcf_dir'});
+    $path2Gvcf = $ENV{'hts_gvcf_dir'};
+}
+
 my $useTargets = 0;
 if (defined $ENV{'hts_use_target_intervals'}) { $useTargets = $ENV{'hts_use_target_intervals'}; }
 
 my $targetOptions = "";
+my $path2Coverage;
 if ($useTargets)
 {
     die "\$hts_target_file not defined" if (!$ENV{'hts_target_file'});
@@ -106,6 +113,9 @@ if ($useTargets)
     {
 	$targetOptions = "-L $path2Targets";
     }
+
+    die "\$hts_coverage_dir not defined" if (!$ENV{'hts_coverage_dir'});
+    $path2Coverage = $ENV{'hts_coverage_dir'};
 }
 
 ############### external data ##################
@@ -349,9 +359,19 @@ execute("java -Xmx$memStack -jar $path2Picard/picard.jar CollectAlignmentSummary
 execute("cp $name.alignment.metrics.txt $path2Stats/");
 execute("rm $name.alignment.metrics.txt");
 
+# if target file is specified, run coverage on target intervals
+if ($useTargets)
+{
+    execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -T DepthOfCoverage -l INFO -R $path2SeqIndex.fasta -I $name.recal.bam $targetOptions -o $name.depths --omitDepthOutputAtEachBase --interval_merging OVERLAPPING_ONLY &> $path2Logs/$name.coverage.log");
+    execute("cp $name.depths* $path2Coverage/");
+}
+
 # genotype sample
-execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T HaplotypeCaller -R $path2SeqIndex.fasta -I $name.recal.bam -stand_call_conf 50.0 -stand_emit_conf 10.0 --emitRefConfidence GVCF --variant_index_type LINEAR --variant_index_parameter 128000 -o $name.g.vcf.gz $targetOptions &> $path2Logs/$name.haplotypecaller.log");
-execute("cp $name.g.vcf* $path2Gvcf/");
+if ($runHaplotypeCaller)
+{
+    execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T HaplotypeCaller -R $path2SeqIndex.fasta -I $name.recal.bam -stand_call_conf 50.0 -stand_emit_conf 10.0 --emitRefConfidence GVCF --variant_index_type LINEAR --variant_index_parameter 128000 -o $name.g.vcf.gz $targetOptions &> $path2Logs/$name.haplotypecaller.log");
+    execute("cp $name.g.vcf* $path2Gvcf/");
+}
 
 # clean up
 execute("rm -r $name*");
