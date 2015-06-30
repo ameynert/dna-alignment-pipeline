@@ -32,8 +32,7 @@ my $usage = qq{USAGE:
 $0 [--help]
   --name  Sample name
   --reads Tab-delimited list of read group info and files, one read group and associated files per line
-          Read group in form ID:id,LB:lib,PL:platform, etc. followed by one (single-end) or two (paired-end) files
-	  e.g. ID:HWI-D00200_123_H8036ADXX_2,PU:HWI-D00200_123_H8036ADXX_2,PL:ILLUMINA,LB:Library,SM:Sample pair_1.sanfastq.gz pair_2.sanfastq.gz
+          Read group in form ID:id,LB:lib,PL:platform, etc. followed by one (single-end) or two (paired-end) file names
 };
 
 my $help = 0;
@@ -251,7 +250,7 @@ for (my $i = 0; $i < scalar(@single_run); $i++)
     my $output_prefix = "$name.$single_run_fastq";
 
     # align with BWA
-    execute("$path2Bwa/bwa mem -M -R \"$read_group\" $path2RefSeq $single_run_fastq | samtools view -bhu - | samtools sort -o $output_prefix.bam -");
+    execute("$path2Bwa/bwa mem -M -R \"$read_group\" $path2RefSeq $single_run_fastq | samtools view -bhu /dev/stdin | samtools sort -o $output_prefix.bam /dev/stdin");
 
     # clean up the FASTQ file
     execute("rm $single_run_fastq");
@@ -271,7 +270,7 @@ for (my $i = 0; $i < scalar(@paired_run_one); $i++)
     my $output_prefix = "$name.$paired_run_fastq_one";
 
     # align with BWA
-    execute("$path2Bwa/bwa mem -M -R \"$read_group\" $path2RefSeq $paired_run_fastq_one $paired_run_fastq_two | samtools view -bhu - | samtools sort -o $output_prefix.bam -");
+    execute("$path2Bwa/bwa mem -M -R \"$read_group\" $path2RefSeq $paired_run_fastq_one $paired_run_fastq_two | samtools view -bhu /dev/stdin | samtools sort -o $output_prefix.bam /dev/stdin");
 
     # clean up the FASTQ files
     execute("rm $paired_run_fastq_one $paired_run_fastq_two");
