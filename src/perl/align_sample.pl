@@ -251,19 +251,10 @@ for (my $i = 0; $i < scalar(@single_run); $i++)
     my $output_prefix = "$name.$single_run_fastq";
 
     # align with BWA
-    execute("$path2Bwa/bwa mem -M -R \"$read_group\" $path2RefSeq $single_run_fastq  | gzip > $output_prefix.sam.gz");
+    execute("$path2Bwa/bwa mem -M -R \"$read_group\" $path2RefSeq $single_run_fastq | samtools view -bhu - | samtools sort -o $output_prefix.bam -");
 
     # clean up the FASTQ file
     execute("rm $single_run_fastq");
-
-    # convert SAM to BAM
-    execute("$path2Samtools/samtools view -hbS -o $output_prefix.unsorted.bam $output_prefix.sam.gz");
-    execute("rm $output_prefix.sam.gz");
-
-    # sort BAM file
-    execute("$path2Samtools/samtools sort $output_prefix.unsorted.bam $output_prefix");
-    execute("rm $output_prefix.unsorted.bam");
-    execute("$path2Samtools/samtools index $output_prefix.bam");
 
     # store the name of the BAM file for merging
     push(@per_run_bam_files, "$output_prefix.bam");
@@ -280,19 +271,10 @@ for (my $i = 0; $i < scalar(@paired_run_one); $i++)
     my $output_prefix = "$name.$paired_run_fastq_one";
 
     # align with BWA
-    execute("$path2Bwa/bwa mem -M -R \"$read_group\" $path2RefSeq $paired_run_fastq_one $paired_run_fastq_two  | gzip > $output_prefix.sam.gz");
+    execute("$path2Bwa/bwa mem -M -R \"$read_group\" $path2RefSeq $paired_run_fastq_one $paired_run_fastq_two | samtools view -bhu - | samtools sort -o $output_prefix.bam -");
 
     # clean up the FASTQ files
     execute("rm $paired_run_fastq_one $paired_run_fastq_two");
-
-    # convert SAM to BAM
-    execute("$path2Samtools/samtools view -hbS -o $output_prefix.unsorted.bam $output_prefix.sam.gz");
-    execute("rm $output_prefix.sam.gz");
-
-    # sort BAM file
-    execute("$path2Samtools/samtools sort $output_prefix.unsorted.bam $output_prefix");
-    execute("rm $output_prefix.unsorted.bam");
-    execute("$path2Samtools/samtools index $output_prefix.bam");
 
     # store the name of the BAM file for merging
     push(@per_run_bam_files, "$output_prefix.bam");
