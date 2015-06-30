@@ -68,7 +68,7 @@ die "\$hts_logs_dir not defined" if (!$ENV{'hts_logs_dir'});
 my $path2Logs = $ENV{'hts_logs_dir'};
 
 die "\$hts_runs_in_dir not defined" if (!$ENV{'hts_runs_in_dir'});
-my $path2Runs= $ENV{'hts_runs_in_dir'};
+my $path2Runs = $ENV{'hts_runs_in_dir'};
 
 die "\$hts_stats_dir not defined" if (!$ENV{'hts_stats_dir'});
 my $path2Stats = $ENV{'hts_stats_dir'};
@@ -100,7 +100,7 @@ my $path2Coverage;
 if ($useTargets)
 {
     die "\$hts_target_file not defined" if (!$ENV{'hts_target_file'});
-    my $path2Targets= $ENV{'hts_target_file'};
+    my $path2Targets = $ENV{'hts_target_file'};
 
     my $targetPadding = 0;
     if (defined $ENV{'hts_target_interval_padding'}) { $targetPadding = $ENV{'hts_target_interval_padding'}; }
@@ -120,13 +120,13 @@ if ($useTargets)
 
 ############### external data ##################
 die "\$hts_reference_seq not defined" if (!$ENV{'hts_reference_seq'});
-my $path2SeqIndex= $ENV{'hts_reference_seq'};
+my $path2RefSeq = $ENV{'hts_reference_seq'};
 
 die "\$hts_dbsnp_file not defined" if (!$ENV{'hts_dbsnp_file'});
-my $path2Dbsnp= $ENV{'hts_dbsnp_file'};
+my $path2Dbsnp = $ENV{'hts_dbsnp_file'};
 
 die "\$hts_known_indels_1 not defined" if (!$ENV{'hts_known_indels_1'});
-my $path2KnownIndels= $ENV{'hts_known_indels_1'};
+my $path2KnownIndels = $ENV{'hts_known_indels_1'};
 
 for (my $i = 2; $i <= 10; $i++)
 {
@@ -144,10 +144,10 @@ die "\$hts_samtools_dir not defined\n" if (!$ENV{'hts_samtools_dir'});
 my $path2Samtools = $ENV{'hts_samtools_dir'};
 
 die "\$hts_picard_dir not defined" if (!$ENV{'hts_picard_dir'});
-my $path2Picard= $ENV{'hts_picard_dir'};
+my $path2Picard = $ENV{'hts_picard_dir'};
 
 die "\$hts_gatk_dir not defined" if (!$ENV{'hts_gatk_dir'});
-my $path2Gatk= $ENV{'hts_gatk_dir'};
+my $path2Gatk = $ENV{'hts_gatk_dir'};
 
 # correctly generates the read path for input FASTQ files depending on samples
 # being in a shared directory or in one directory per sample
@@ -251,7 +251,7 @@ for (my $i = 0; $i < scalar(@single_run); $i++)
     my $output_prefix = "$name.$single_run_fastq";
 
     # align with BWA
-    execute("$path2Bwa/bwa mem -M -R \"$read_group\" $path2SeqIndex.fasta $single_run_fastq  | gzip > $output_prefix.sam.gz");
+    execute("$path2Bwa/bwa mem -M -R \"$read_group\" $path2RefSeq $single_run_fastq  | gzip > $output_prefix.sam.gz");
 
     # clean up the FASTQ file
     execute("rm $single_run_fastq");
@@ -280,7 +280,7 @@ for (my $i = 0; $i < scalar(@paired_run_one); $i++)
     my $output_prefix = "$name.$paired_run_fastq_one";
 
     # align with BWA
-    execute("$path2Bwa/bwa mem -M -R \"$read_group\" $path2SeqIndex.fasta $paired_run_fastq_one $paired_run_fastq_two  | gzip > $output_prefix.sam.gz");
+    execute("$path2Bwa/bwa mem -M -R \"$read_group\" $path2RefSeq $paired_run_fastq_one $paired_run_fastq_two  | gzip > $output_prefix.sam.gz");
 
     # clean up the FASTQ files
     execute("rm $paired_run_fastq_one $paired_run_fastq_two");
@@ -338,18 +338,18 @@ execute("cp $name.rmdup.metrics.txt $path2Stats/");
 execute("rm $name.raw.bam* $name.rmdup.metrics.txt");
 
 # detect suspicious intervals
-execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T RealignerTargetCreator -R $path2SeqIndex.fasta $targetOptions -known $path2KnownIndels -o $name.intervals -I $name.dedup.bam &> $path2Logs/$name.realignertargetcreator.log");
+execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T RealignerTargetCreator -R $path2RefSeq $targetOptions -known $path2KnownIndels -o $name.intervals -I $name.dedup.bam &> $path2Logs/$name.realignertargetcreator.log");
 
 # re-align around indels (mate pair fixing is done on the fly)
-execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T IndelRealigner -R $path2SeqIndex.fasta -known $path2KnownIndels $targetOptions -I $name.dedup.bam -o $name.realigned.bam &> $path2Logs/$name.indelrealigner.log");
+execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T IndelRealigner -R $path2RefSeq -known $path2KnownIndels $targetOptions -I $name.dedup.bam -o $name.realigned.bam &> $path2Logs/$name.indelrealigner.log");
 execute("cp $name.intervals $path2Stats/");
 execute("rm $name.dedup.bam* $name.intervals");
 
 # count covariates for base quality re-calibration
-execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T BaseRecalibrator -R $path2SeqIndex.fasta $targetOptions -knownSites $path2Dbsnp -I $name.realigned.bam -o $name.recal.grp &> $path2Logs/$name.baserecalibrator.log");
+execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T BaseRecalibrator -R $path2RefSeq $targetOptions -knownSites $path2Dbsnp -I $name.realigned.bam -o $name.recal.grp &> $path2Logs/$name.baserecalibrator.log");
         
 # apply re-calibration
-execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T PrintReads -R $path2SeqIndex.fasta -BQSR $name.recal.grp -I $name.realigned.bam -o $name.recal.bam &> $path2Logs/$name.printreads.log");
+execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T PrintReads -R $path2RefSeq -BQSR $name.recal.grp -I $name.realigned.bam -o $name.recal.bam &> $path2Logs/$name.printreads.log");
 execute("cp $name.recal.grp $path2Stats/");
 execute("cp $name.recal.ba* $path2Bam/");
 execute("rm $name.realigned* $name.recal.grp");
@@ -362,14 +362,14 @@ execute("rm $name.alignment.metrics.txt");
 # if target file is specified, run coverage on target intervals
 if ($useTargets)
 {
-    execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -T DepthOfCoverage -l INFO -R $path2SeqIndex.fasta -I $name.recal.bam $targetOptions -o $name.depths --omitDepthOutputAtEachBase --interval_merging OVERLAPPING_ONLY &> $path2Logs/$name.coverage.log");
+    execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -T DepthOfCoverage -l INFO -R $path2RefSeq -I $name.recal.bam $targetOptions -o $name.depths --omitDepthOutputAtEachBase --interval_merging OVERLAPPING_ONLY &> $path2Logs/$name.coverage.log");
     execute("cp $name.depths* $path2Coverage/");
 }
 
 # genotype sample
 if ($runHaplotypeCaller)
 {
-    execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T HaplotypeCaller -R $path2SeqIndex.fasta -I $name.recal.bam -stand_call_conf 50.0 -stand_emit_conf 10.0 --emitRefConfidence GVCF --variant_index_type LINEAR --variant_index_parameter 128000 -o $name.g.vcf.gz $targetOptions &> $path2Logs/$name.haplotypecaller.log");
+    execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T HaplotypeCaller -R $path2RefSeq -I $name.recal.bam -stand_call_conf 50.0 -stand_emit_conf 10.0 --emitRefConfidence GVCF --variant_index_type LINEAR --variant_index_parameter 128000 -o $name.g.vcf.gz $targetOptions &> $path2Logs/$name.haplotypecaller.log");
     execute("cp $name.g.vcf* $path2Gvcf/");
 }
 
