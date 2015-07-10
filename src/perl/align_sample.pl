@@ -56,6 +56,8 @@ my $path2Work;
 if ($ENV{'hts_work_dir'})
 {
     $path2Work = $ENV{'hts_work_dir'};
+    execute("mkdir -p $path2Work/$name");
+    $path2Work .= "/$name";
 }
 else
 {
@@ -164,10 +166,11 @@ sub read_path
 
 # debug and verbose variables
 my $debug = 0;
-if (defined $ENV{'ngs_debug'}) { $debug = $ENV{'ngs_debug'}; }
+if (defined $ENV{'hts_debug'}) { $debug = $ENV{'hts_debug'}; }
 
 my $verbose = 0;
-if (defined $ENV{'verbose'}) { $debug = $ENV{'verbose'}; }                                                                                                                                                       
+if (defined $ENV{'hts_verbose'}) { $debug = $ENV{'hts_verbose'}; }
+
 # command execution with optional debugging
 sub execute
 {
@@ -250,7 +253,7 @@ for (my $i = 0; $i < scalar(@single_run); $i++)
     my $output_prefix = "$name.$single_run_fastq";
 
     # align with BWA
-    execute("$path2Bwa/bwa mem -M -R \"$read_group\" $path2RefSeq $single_run_fastq | samtools view -bhu /dev/stdin | samtools sort -o $output_prefix.bam /dev/stdin");
+    execute("$path2Bwa/bwa mem -M -R \"$read_group\" $path2RefSeq $single_run_fastq | samtools view -Su /dev/stdin | samtools sort /dev/stdin $output_prefix");
 
     # clean up the FASTQ file
     execute("rm $single_run_fastq");
@@ -270,7 +273,7 @@ for (my $i = 0; $i < scalar(@paired_run_one); $i++)
     my $output_prefix = "$name.$paired_run_fastq_one";
 
     # align with BWA
-    execute("$path2Bwa/bwa mem -M -R \"$read_group\" $path2RefSeq $paired_run_fastq_one $paired_run_fastq_two | samtools view -bhu /dev/stdin | samtools sort -o $output_prefix.bam /dev/stdin");
+    execute("$path2Bwa/bwa mem -M -R \"$read_group\" $path2RefSeq $paired_run_fastq_one $paired_run_fastq_two | samtools view -Su /dev/stdin | samtools sort /dev/stdin $output_prefix");
 
     # clean up the FASTQ files
     execute("rm $paired_run_fastq_one $paired_run_fastq_two");
@@ -284,7 +287,6 @@ if (scalar(@per_run_bam_files) == 1)
     # only one run, rename it
     my $run = $per_run_bam_files[0];
     execute("mv $run $name.raw.bam");
-    execute("mv $run.bai $name.raw.bam.bai");
 }
 else
 {
@@ -322,7 +324,7 @@ execute("rm $name.raw.bam* $name.rmdup.metrics.txt");
 execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T RealignerTargetCreator -R $path2RefSeq $targetOptions -known $path2KnownIndels -o $name.intervals -I $name.dedup.bam &> $path2Logs/$name.realignertargetcreator.log");
 
 # re-align around indels (mate pair fixing is done on the fly)
-execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T IndelRealigner -R $path2RefSeq -known $path2KnownIndels $targetOptions -I $name.dedup.bam -o $name.realigned.bam &> $path2Logs/$name.indelrealigner.log");
+execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T IndelRealigner -R $path2RefSeq -known $path2KnownIndels -targetIntervals $name.intervals -I $name.dedup.bam -o $name.realigned.bam &> $path2Logs/$name.indelrealigner.log");
 execute("cp $name.intervals $path2Stats/");
 execute("rm $name.dedup.bam* $name.intervals");
 
