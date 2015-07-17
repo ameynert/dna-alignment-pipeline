@@ -4,7 +4,7 @@
 
 for file in `cat $1`
 do
-  cp $ngs_gvcf_dir/$file* $TMPDIR/
+  cp $hts_gvcf_dir/$file* $TMPDIR/
   bfile=`basename $file`
   echo "--variant $bfile" >> $TMPDIR/gvcfs.txt
 done
@@ -13,6 +13,6 @@ cd $TMPDIR
 
 VARIANTS=`cat gvcfs.txt`
 
-$ngs_java_dir/java -Xmx16g -jar $ngs_gatk_dir/GenomeAnalysisTK.jar -T GenotypeGVCFs -l INFO -R $ngs_reference_seq.fasta --dbsnp $ngs_dbsnp_file -L $ngs_target_file -o $JOB_NAME.raw.vcf.gz $VARIANTS &> $ngs_logs_dir/$JOB_NAME.genotypegvcfs.log
+java -Xmx$hts_java_memstack -jar $hts_gatk -T GenotypeGVCFs -l INFO -R $hts_reference_seq --dbsnp $hts_dbsnp_file -L $hts_target_file -o $JOB_NAME.raw.vcf.gz $VARIANTS &> $hts_logs_dir/$JOB_NAME.genotypegvcfs.log
 
-cp $JOB_NAME.raw.vcf* $ngs_vcf_dir/
+cp $JOB_NAME.raw.vcf* $hts_vcf_dir/
