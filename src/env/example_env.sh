@@ -52,3 +52,9 @@ export hts_picard=$hts_external_dir/java/picard/1.126/bin/picard.jar
 
 module load apps/java/GenomeAnalysisTK/3.3-0
 export hts_gatk=$hts_external_dir/java/GenomeAnalysisTK/3.3-0/bin/GenomeAnalysisTK.jar
+
+module load apps/gcc/fastqc/0.10.1
+export hts_fastq=$hts_external_dir/gcc/fastqc/0.10.1/bin/fastqc
+
+module load apps/gcc/vcftools/0.1.12b
+export hts_vcftools=$hts_external_dir/gcc/vcftools/0.1.12b/bin/vcftools

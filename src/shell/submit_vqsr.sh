@@ -27,8 +27,8 @@ java -Xmx4g -jar $ngs_gatk -T ApplyRecalibration -R $ngs_reference_seq.fasta --i
 java -Xmx4g -jar $ngs_gatk -T ApplyRecalibration -R $ngs_reference_seq.fasta --input $JOB_NAME.raw.vcf.gz -recalFile $JOB_NAME.indels.recal -tranchesFile $JOB_NAME.indels.tranches -o $JOB_NAME.indels.recal.vcf.gz --ts_filter_level 99 -mode INDEL &> $ngs_logs_dir/$JOB_NAME.indels.applyrecalibration.log
 
 # split VCF into SNPs and indels, filter based on re-calibration and ids
-vcftools --gzvcf $JOB_NAME.snps.recal.vcf.gz --out $JOB_NAME.snps.filtered --remove-filtered-all --remove-indels `cat indv.txt` --non-ref-ac 1 --recode --recode-INFO-all
-vcftools --gzvcf $JOB_NAME.indels.recal.vcf.gz --out $JOB_NAME.indels.filtered --remove-filtered-all --keep-only-indels `cat indv.txt` --non-ref-ac 1 --recode --recode-INFO-all
+$hts_vcftools --gzvcf $JOB_NAME.snps.recal.vcf.gz --out $JOB_NAME.snps.filtered --remove-filtered-all --remove-indels `cat indv.txt` --non-ref-ac 1 --recode --recode-INFO-all
+$hts_vcftools --gzvcf $JOB_NAME.indels.recal.vcf.gz --out $JOB_NAME.indels.filtered --remove-filtered-all --keep-only-indels `cat indv.txt` --non-ref-ac 1 --recode --recode-INFO-all
 
 # rename, bgzip and tabix results
 for type in "snps" "indels"

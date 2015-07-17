@@ -12,4 +12,4 @@ FASTQ2=$(cat $PARAMS | head -n $SGE_TASK_ID | tail -n 1 | awk '{ print $3 }')
 
 cd $ngs_runs_in_dir/$DIR
 
-fastqc --no-extract $FASTQ1 $FASTQ2
+$hts_fastqc --no-extract $FASTQ1 $FASTQ2
