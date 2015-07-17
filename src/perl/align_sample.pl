@@ -138,17 +138,17 @@ for (my $i = 2; $i <= 10; $i++)
 }
 
 ############### external software ##################
-die "\$hts_bwa_dir not defined\n" if (!$ENV{'hts_bwa_dir'});
-my $path2Bwa = $ENV{'hts_bwa_dir'};
+die "\$hts_bwa not defined\n" if (!$ENV{'hts_bwa'});
+my $path2Bwa = $ENV{'hts_bwa'};
 
-die "\$hts_samtools_dir not defined\n" if (!$ENV{'hts_samtools_dir'});
-my $path2Samtools = $ENV{'hts_samtools_dir'};
+die "\$hts_samtools not defined\n" if (!$ENV{'hts_samtools'});
+my $path2Samtools = $ENV{'hts_samtools'};
 
-die "\$hts_picard_dir not defined" if (!$ENV{'hts_picard_dir'});
-my $path2Picard = $ENV{'hts_picard_dir'};
+die "\$hts_picard not defined" if (!$ENV{'hts_picard'});
+my $path2Picard = $ENV{'hts_picard'};
 
-die "\$hts_gatk_dir not defined" if (!$ENV{'hts_gatk_dir'});
-my $path2Gatk = $ENV{'hts_gatk_dir'};
+die "\$hts_gatk not defined" if (!$ENV{'hts_gatk'});
+my $path2Gatk = $ENV{'hts_gatk'};
 
 # correctly generates the read path for input FASTQ files depending on samples
 # being in a shared directory or in one directory per sample
@@ -253,7 +253,11 @@ for (my $i = 0; $i < scalar(@single_run); $i++)
     my $output_prefix = "$name.$single_run_fastq";
 
     # align with BWA
+<<<<<<< .merge_file_7sGZ8o
+    execute("$path2Bwa mem -M -R \"$read_group\" $path2RefSeq $single_run_fastq | $path2Samtools view -Su /dev/stdin | $path2Samtools sort /dev/stdin $output_prefix");
+=======
     execute("$path2Bwa/bwa mem -M -R \"$read_group\" $path2RefSeq $single_run_fastq | samtools view -Su /dev/stdin | samtools sort /dev/stdin $output_prefix");
+>>>>>>> .merge_file_bcefno
 
     # clean up the FASTQ file
     execute("rm $single_run_fastq");
@@ -273,7 +277,11 @@ for (my $i = 0; $i < scalar(@paired_run_one); $i++)
     my $output_prefix = "$name.$paired_run_fastq_one";
 
     # align with BWA
+<<<<<<< .merge_file_7sGZ8o
+    execute("$path2Bwa mem -M -R \"$read_group\" $path2RefSeq $paired_run_fastq_one $paired_run_fastq_two | $path2Samtools view -Su /dev/stdin | $path2Samtools sort /dev/stdin $output_prefix");
+=======
     execute("$path2Bwa/bwa mem -M -R \"$read_group\" $path2RefSeq $paired_run_fastq_one $paired_run_fastq_two | samtools view -Su /dev/stdin | samtools sort /dev/stdin $output_prefix");
+>>>>>>> .merge_file_bcefno
 
     # clean up the FASTQ files
     execute("rm $paired_run_fastq_one $paired_run_fastq_two");
@@ -296,15 +304,15 @@ else
     foreach my $run (@per_run_bam_files)
     {
 	$all_rg .= " $run.header.rg";
-	execute("$path2Samtools/samtools view -H $run | grep ^\@RG > $run.header.rg");
-	execute("$path2Samtools/samtools view -H $run | grep -v ^\@RG > $name.header");
+	execute("$path2Samtools view -H $run | grep ^\@RG > $run.header.rg");
+	execute("$path2Samtools view -H $run | grep -v ^\@RG > $name.header");
     }
 
     # this assumes that all headers are the same except for the read group definitions - should be ok
     execute("cat $all_rg | sort | uniq > $name.rg.uniq");
     execute("cat $name.header $name.rg.uniq > $name.header.sam");
-    execute("$path2Samtools/samtools merge -c -p $name.raw.bam $all_runs");
-    execute("$path2Samtools/samtools reheader $name.header.sam $name.raw.bam > $name.reheadered.bam");
+    execute("$path2Samtools merge -c -p $name.raw.bam $all_runs");
+    execute("$path2Samtools reheader $name.header.sam $name.raw.bam > $name.reheadered.bam");
     execute("mv $name.reheadered.bam $name.raw.bam");
     execute("rm $name.header $name.rg.uniq $name.header.sam");
 
@@ -316,43 +324,47 @@ else
 }
 
 # mark duplicates with Picard
-execute("java -Xmx$memStack -jar $path2Picard/picard.jar MarkDuplicates INPUT=$name.raw.bam OUTPUT=$name.dedup.bam METRICS_FILE=$name.rmdup.metrics.txt ASSUME_SORTED=TRUE CREATE_INDEX=TRUE VALIDATION_STRINGENCY=SILENT &> $path2Logs/$name.markduplicates.log");
+execute("java -Xmx$memStack -jar $path2Picard MarkDuplicates INPUT=$name.raw.bam OUTPUT=$name.dedup.bam METRICS_FILE=$name.rmdup.metrics.txt ASSUME_SORTED=TRUE CREATE_INDEX=TRUE VALIDATION_STRINGENCY=SILENT &> $path2Logs/$name.markduplicates.log");
 execute("cp $name.rmdup.metrics.txt $path2Stats/");
 execute("rm $name.raw.bam* $name.rmdup.metrics.txt");
 
 # detect suspicious intervals
-execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T RealignerTargetCreator -R $path2RefSeq $targetOptions -known $path2KnownIndels -o $name.intervals -I $name.dedup.bam &> $path2Logs/$name.realignertargetcreator.log");
+execute("java -Xmx$memStack -jar $path2Gatk -l INFO -T RealignerTargetCreator -R $path2RefSeq $targetOptions -known $path2KnownIndels -o $name.intervals -I $name.dedup.bam &> $path2Logs/$name.realignertargetcreator.log");
 
 # re-align around indels (mate pair fixing is done on the fly)
+<<<<<<< .merge_file_7sGZ8o
+execute("java -Xmx$memStack -jar $path2Gatk -l INFO -T IndelRealigner -R $path2RefSeq -known $path2KnownIndels -targetIntervals $name.intervals -I $name.dedup.bam -o $name.realigned.bam &> $path2Logs/$name.indelrealigner.log");
+=======
 execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T IndelRealigner -R $path2RefSeq -known $path2KnownIndels -targetIntervals $name.intervals -I $name.dedup.bam -o $name.realigned.bam &> $path2Logs/$name.indelrealigner.log");
+>>>>>>> .merge_file_bcefno
 execute("cp $name.intervals $path2Stats/");
 execute("rm $name.dedup.bam* $name.intervals");
 
 # count covariates for base quality re-calibration
-execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T BaseRecalibrator -R $path2RefSeq $targetOptions -knownSites $path2Dbsnp -I $name.realigned.bam -o $name.recal.grp &> $path2Logs/$name.baserecalibrator.log");
+execute("java -Xmx$memStack -jar $path2Gatk -l INFO -T BaseRecalibrator -R $path2RefSeq $targetOptions -knownSites $path2Dbsnp -I $name.realigned.bam -o $name.recal.grp &> $path2Logs/$name.baserecalibrator.log");
         
 # apply re-calibration
-execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T PrintReads -R $path2RefSeq -BQSR $name.recal.grp -I $name.realigned.bam -o $name.recal.bam &> $path2Logs/$name.printreads.log");
+execute("java -Xmx$memStack -jar $path2Gatk -l INFO -T PrintReads -R $path2RefSeq -BQSR $name.recal.grp -I $name.realigned.bam -o $name.recal.bam &> $path2Logs/$name.printreads.log");
 execute("cp $name.recal.grp $path2Stats/");
 execute("cp $name.recal.ba* $path2Bam/");
 execute("rm $name.realigned* $name.recal.grp");
 
 # collect alignment metrics with Picard
-execute("java -Xmx$memStack -jar $path2Picard/picard.jar CollectAlignmentSummaryMetrics INPUT=$name.recal.bam OUTPUT=$name.alignment.metrics.txt ASSUME_SORTED=TRUE VALIDATION_STRINGENCY=SILENT &> $path2Logs/$name.alignmentmetrics.log");
+execute("java -Xmx$memStack -jar $path2Picard CollectAlignmentSummaryMetrics INPUT=$name.recal.bam OUTPUT=$name.alignment.metrics.txt ASSUME_SORTED=TRUE VALIDATION_STRINGENCY=SILENT &> $path2Logs/$name.alignmentmetrics.log");
 execute("cp $name.alignment.metrics.txt $path2Stats/");
 execute("rm $name.alignment.metrics.txt");
 
 # if target file is specified, run coverage on target intervals
 if ($useTargets)
 {
-    execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -T DepthOfCoverage -l INFO -R $path2RefSeq -I $name.recal.bam $targetOptions -o $name.depths --omitDepthOutputAtEachBase --interval_merging OVERLAPPING_ONLY &> $path2Logs/$name.coverage.log");
+    execute("java -Xmx$memStack -jar $path2Gatk -T DepthOfCoverage -l INFO -R $path2RefSeq -I $name.recal.bam $targetOptions -o $name.depths --omitDepthOutputAtEachBase --interval_merging OVERLAPPING_ONLY &> $path2Logs/$name.coverage.log");
     execute("cp $name.depths* $path2Coverage/");
 }
 
 # genotype sample
 if ($runHaplotypeCaller)
 {
-    execute("java -Xmx$memStack -jar $path2Gatk/GenomeAnalysisTK.jar -l INFO -T HaplotypeCaller -R $path2RefSeq -I $name.recal.bam -stand_call_conf 50.0 -stand_emit_conf 10.0 --emitRefConfidence GVCF --variant_index_type LINEAR --variant_index_parameter 128000 -o $name.g.vcf.gz $targetOptions &> $path2Logs/$name.haplotypecaller.log");
+    execute("java -Xmx$memStack -jar $path2Gatk -l INFO -T HaplotypeCaller -R $path2RefSeq -I $name.recal.bam -stand_call_conf 50.0 -stand_emit_conf 10.0 --emitRefConfidence GVCF --variant_index_type LINEAR --variant_index_parameter 128000 -o $name.g.vcf.gz $targetOptions &> $path2Logs/$name.haplotypecaller.log");
     execute("cp $name.g.vcf* $path2Gvcf/");
 }
 
