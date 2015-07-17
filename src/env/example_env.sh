@@ -5,7 +5,7 @@ module load apps/gcc/java/1.7.0_60
 
 # source code and working directories
 export hts_src_dir=/export/users/ameynert/exome_alignment/src
-export hts_tmp_dir=/tmp # local directory on node
+#export hts_work_dir=/tmp # only specify if not wanting to use File::Temp on nodes
 
 # project directories
 export hts_project_dir=/mnt/lustre2/ameynert/alignment
@@ -42,13 +42,13 @@ export hts_known_indels_2=$hts_gatk_bundle_dir/Mills_and_1000G_gold_standard.ind
 export hts_external_dir=/opt/gridware/apps
 
 module load apps/gcc/BWA/0.7.10
-export hts_bwa_dir=$hts_external_dir/gcc/BWA/0.7.10/bin
+export hts_bwa=$hts_external_dir/gcc/BWA/0.7.10/bin/bwa
 
 module load apps/gcc/samtools/1.1
-export hts_samtools_dir=$hts_external_dir/gcc/samtools/1.1/bin
+export hts_samtools=$hts_external_dir/gcc/samtools/1.1/bin/samtools
 
 module load apps/java/picard/1.126
-export hts_picard_dir=$hts_external_dir/java/picard/1.126/bin
+export hts_picard=$hts_external_dir/java/picard/1.126/bin/picard.jar
 
 module load apps/java/GenomeAnalysisTK/3.3-0
-export hts_gatk_dir=$hts_external_dir/java/GenomeAnalysisTK/3.3-0/bin
+export hts_gatk=$hts_external_dir/java/GenomeAnalysisTK/3.3-0/bin/GenomeAnalysisTK.jar
