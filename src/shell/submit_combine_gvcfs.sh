@@ -1,15 +1,38 @@
 #!/bin/bash
-#$ -S /bin/bash
 #$ -cwd
+#$ -w w
+#$ -j y
+#$ -S /bin/bash
+#$ -l h_vmem=32g
+#$ -l h_rt=24:00:00
+#$ -N combinegvcfs
 
+ulimit -n 2000
+unset MODULEPATH
+
+. /etc/profile.d/modules.sh
+
+ENV=$1
+NAME=$2
+
+source $ENV
+
+cd $hts_work_dir
+mkdir -p $NAME
+cd $NAME
+
+rm $NAME.gvcfs.txt
 for id in `cat $1`
 do
-  cp $ngs_gvcf_dir/$id.g.vcf* $TMPDIR/
-  echo "--variant $id.g.vcf.gz" >> $TMPDIR/gvcfs.txt
+  cp $hts_gvcf_dir/$id.g.vcf* ./
+  echo "--variant $id.g.vcf.gz" >> $NAME.gvcfs.txt
 done
 
 cd $TMPDIR
 
-java -Xmx16g -jar $ngs_gatk -T CombineGVCFs -l INFO -R $ngs_reference_seq.fasta -o $JOB_NAME.g.vcf.gz `cat gvcfs.txt` &> $ngs_logs_dir/$JOB_NAME.combinegvcfs.log
+java -Xmx16g -jar $hts_gatk -T CombineGVCFs -l INFO -R $hts_reference_seq -o $NAME.g.vcf.gz `cat $NAME.gvcfs.txt` &> $hts_logs_dir/$NAME.combinegvcfs.log
 
-cp $JOB_NAME.g.vcf* $ngs_gvcf_dir/
+cp $NAME.g.vcf* $hts_gvcf_dir/
+
+cd ..
+rm -r $NAME

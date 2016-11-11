@@ -1,18 +1,38 @@
 #!/bin/bash
-#$ -S /bin/bash
 #$ -cwd
+#$ -w w
+#$ -j y
+#$ -S /bin/bash
+#$ -l h_vmem=32g
+#$ -l h_rt=1:00:00
+#$ -N genotype
 
-for file in `cat $1`
+ulimit -n 2000
+unset MODULEPATH
+
+. /etc/profile.d/modules.sh
+
+ENV=$1
+NAME=$2
+GVCFS=$3
+
+source $ENV
+
+cd $hts_work_dir
+mkdir -p $NAME
+cd $NAME
+
+rm $NAME.gvcfs.txt
+for file in `cat $GVCFS`
 do
-  cp $hts_gvcf_dir/$file* $TMPDIR/
+  cp $hts_gvcf_dir/$file* ./
   bfile=`basename $file`
-  echo "--variant $bfile" >> $TMPDIR/gvcfs.txt
+  echo "--variant $bfile" >> $NAME.gvcfs.txt
 done
 
-cd $TMPDIR
+java -Xmx$hts_java_memstack -jar $hts_gatk -T GenotypeGVCFs -l INFO -R $hts_reference_seq --dbsnp $hts_dbsnp_file -L $hts_target_file -o $NAME.raw.vcf.gz `cat $NAME.gvcfs.txt` &> $hts_logs_dir/$NAME.genotypegvcfs.log
 
-VARIANTS=`cat gvcfs.txt`
+cp $NAME.raw.vcf* $hts_vcf_dir/
 
-java -Xmx$hts_java_memstack -jar $hts_gatk -T GenotypeGVCFs -l INFO -R $hts_reference_seq --dbsnp $hts_dbsnp_file -L $hts_target_file -o $JOB_NAME.raw.vcf.gz $VARIANTS &> $hts_logs_dir/$JOB_NAME.genotypegvcfs.log
-
-cp $JOB_NAME.raw.vcf* $hts_vcf_dir/
+cd ..
+rm -r $NAME
