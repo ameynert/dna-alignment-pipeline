@@ -1,14 +1,11 @@
 # define environment
-source /etc/profile.d/modules.sh
-module load apps/gcc/perl/5.14.1
-module load apps/gcc/java/1.7.0_60
 
 # source code and working directories
-export hts_src_dir=/export/users/ameynert/exome_alignment/src
-#export hts_work_dir=/tmp # only specify if not wanting to use File::Temp on nodes
+export hts_src_dir=/exports/igmm/eddie/bioinfsvice/ameynert/lewis_myopia/dna-alignment-pipeline/src
+export hts_work_dir=/exports/eddie/scratch/ameyner2/lewis_myopia/work
 
 # project directories
-export hts_project_dir=/mnt/lustre2/ameynert/alignment
+export hts_project_dir=/exports/igmm/eddie/bioinfsvice/ameynert/lewis_myopia
 export hts_runs_in_dir=$hts_project_dir/runs
 export hts_bam_in_dir=$hts_project_dir/bam
 export hts_bam_out_dir=$hts_project_dir/bam
@@ -25,36 +22,23 @@ export hts_runs_in_own_dirs=1
 export hts_java_memstack=4g
 export hts_use_target_intervals=1
 export hts_target_interval_padding=0
-export hts_target_file=$hts_project_dir/targets/targets.bed
+export hts_target_file=$hts_project_dir/targets/AmpliSeq.Nextera.TruSeq.plus50bpflanks.merged.b37.bed
 export hts_run_haplotype_caller=1
 
 # external data
-export hts_resources_dir=/mnt/lustre2/evolgen
+export hts_resources_dir=/exports/igmm/eddie/NextGenResources
 export hts_reference_id=b37
-export hts_bwa_version=bwa-0.7.10
-export hts_reference_seq=$hts_resources_dir/reference/$hts_reference_id/$hts_bwa_version/human.fasta
-export hts_gatk_bundle_dir=$hts_resources_dir/gatk_bundle/$hts_reference_id
+export hts_reference_seq=$hts_resources_dir/reference/b37/bwa-0.7.12-r1039/human_g1k_v37.fasta
+export hts_gatk_bundle_dir=$hts_resources_dir/gatk_bundle/2.8/$hts_reference_id
 export hts_dbsnp_file=$hts_gatk_bundle_dir/dbsnp_138.$hts_reference_id.vcf
 export hts_known_indels_1=$hts_gatk_bundle_dir/1000G_phase1.indels.$hts_reference_id.vcf
 export hts_known_indels_2=$hts_gatk_bundle_dir/Mills_and_1000G_gold_standard.indels.$hts_reference_id.vcf
 
 # external software
-export hts_external_dir=/opt/gridware/apps
+module load igmm/apps/FastQC/0.11.4
+module load igmm/apps/bwa/0.7.12-r1039 # Note it's important that the version of BWA used to align matches the version used to index the reference genome
+module load igmm/apps/samtools/1.2
+module load igmm/apps/vcftools/0.1.13
 
-module load apps/gcc/BWA/0.7.10
-export hts_bwa=$hts_external_dir/gcc/BWA/0.7.10/bin/bwa
-
-module load apps/gcc/samtools/1.1
-export hts_samtools=$hts_external_dir/gcc/samtools/1.1/bin/samtools
-
-module load apps/java/picard/1.126
-export hts_picard=$hts_external_dir/java/picard/1.126/bin/picard.jar
-
-module load apps/java/GenomeAnalysisTK/3.3-0
-export hts_gatk=$hts_external_dir/java/GenomeAnalysisTK/3.3-0/bin/GenomeAnalysisTK.jar
-
-module load apps/gcc/fastqc/0.10.1
-export hts_fastq=$hts_external_dir/gcc/fastqc/0.10.1/bin/fastqc
-
-module load apps/gcc/vcftools/0.1.12b
-export hts_vcftools=$hts_external_dir/gcc/vcftools/0.1.12b/bin/vcftools
+export hts_picard=$hts_resources_dir/software/picard-tools-1.139/picard.jar
+export hts_gatk=$hts_resources_dir/software/GenomeAnalysisTK-3.6/GenomeAnalysisTK.jar

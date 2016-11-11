@@ -138,12 +138,6 @@ for (my $i = 2; $i <= 10; $i++)
 }
 
 ############### external software ##################
-die "\$hts_bwa not defined\n" if (!$ENV{'hts_bwa'});
-my $path2Bwa = $ENV{'hts_bwa'};
-
-die "\$hts_samtools not defined\n" if (!$ENV{'hts_samtools'});
-my $path2Samtools = $ENV{'hts_samtools'};
-
 die "\$hts_picard not defined" if (!$ENV{'hts_picard'});
 my $path2Picard = $ENV{'hts_picard'};
 
@@ -166,10 +160,10 @@ sub read_path
 
 # debug and verbose variables
 my $debug = 0;
-if (defined $ENV{'hts_debug'}) { $debug = $ENV{'hts_debug'}; }
+if (defined($ENV{'hts_debug'})) { $debug = $ENV{'hts_debug'}; }
 
 my $verbose = 0;
-if (defined $ENV{'hts_verbose'}) { $debug = $ENV{'hts_verbose'}; }
+if (defined($ENV{'hts_verbose'})) { $verbose = $ENV{'hts_verbose'}; }
 
 # command execution with optional debugging
 sub execute
@@ -253,7 +247,7 @@ for (my $i = 0; $i < scalar(@single_run); $i++)
     my $output_prefix = "$name.$single_run_fastq";
 
     # align with BWA
-    execute("$path2Bwa mem -M -R \"$read_group\" $path2RefSeq $single_run_fastq | $path2Samtools view -Su /dev/stdin | $path2Samtools sort /dev/stdin $output_prefix");
+    execute("bwa mem -M -R \"$read_group\" $path2RefSeq $single_run_fastq | samtools view -Su /dev/stdin | samtools sort /dev/stdin $output_prefix");
 
     # clean up the FASTQ file
     execute("rm $single_run_fastq");
@@ -273,7 +267,7 @@ for (my $i = 0; $i < scalar(@paired_run_one); $i++)
     my $output_prefix = "$name.$paired_run_fastq_one";
 
     # align with BWA
-    execute("$path2Bwa mem -M -R \"$read_group\" $path2RefSeq $paired_run_fastq_one $paired_run_fastq_two | $path2Samtools view -Su /dev/stdin | $path2Samtools sort /dev/stdin $output_prefix");
+    execute("bwa mem -M -R \"$read_group\" $path2RefSeq $paired_run_fastq_one $paired_run_fastq_two | samtools view -Su /dev/stdin | samtools sort /dev/stdin $output_prefix");
 
     # clean up the FASTQ files
     execute("rm $paired_run_fastq_one $paired_run_fastq_two");
@@ -296,15 +290,15 @@ else
     foreach my $run (@per_run_bam_files)
     {
 	$all_rg .= " $run.header.rg";
-	execute("$path2Samtools view -H $run | grep ^\@RG > $run.header.rg");
-	execute("$path2Samtools view -H $run | grep -v ^\@RG > $name.header");
+	execute("samtools view -H $run | grep ^\@RG > $run.header.rg");
+	execute("samtools view -H $run | grep -v ^\@RG > $name.header");
     }
 
     # this assumes that all headers are the same except for the read group definitions - should be ok
     execute("cat $all_rg | sort | uniq > $name.rg.uniq");
     execute("cat $name.header $name.rg.uniq > $name.header.sam");
-    execute("$path2Samtools merge -c -p $name.raw.bam $all_runs");
-    execute("$path2Samtools reheader $name.header.sam $name.raw.bam > $name.reheadered.bam");
+    execute("samtools merge -c -p $name.raw.bam $all_runs");
+    execute("samtools reheader $name.header.sam $name.raw.bam > $name.reheadered.bam");
     execute("mv $name.reheadered.bam $name.raw.bam");
     execute("rm $name.header $name.rg.uniq $name.header.sam");
 
