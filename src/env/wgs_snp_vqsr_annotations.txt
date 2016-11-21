@@ -1,0 +1,8 @@
+-an DP
+-an MQ
+-an MQRankSum
+-an ReadPosRankSum
+-an FS
+-an SOR
+-an InbreedingCoeff
+-an QD

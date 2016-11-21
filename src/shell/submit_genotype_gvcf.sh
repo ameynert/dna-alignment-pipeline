@@ -3,8 +3,8 @@
 #$ -w w
 #$ -j y
 #$ -S /bin/bash
-#$ -l h_vmem=32g
-#$ -l h_rt=1:00:00
+#$ -l h_vmem=16g
+#$ -l h_rt=24:00:00
 #$ -N genotype
 
 ulimit -n 2000
@@ -30,7 +30,9 @@ do
   echo "--variant $bfile" >> $NAME.gvcfs.txt
 done
 
-java -Xmx$hts_java_memstack -jar $hts_gatk -T GenotypeGVCFs -l INFO -R $hts_reference_seq --dbsnp $hts_dbsnp_file -L $hts_target_file -o $NAME.raw.vcf.gz `cat $NAME.gvcfs.txt` &> $hts_logs_dir/$NAME.genotypegvcfs.log
+echo "java -Xmx8g -jar $hts_gatk -T GenotypeGVCFs -l INFO -R $hts_reference_seq --dbsnp $hts_dbsnp_file -L $hts_target_file -o $NAME.raw.vcf.gz `cat $NAME.gvcfs.txt` &> $hts_logs_dir/$NAME.genotypegvcfs.log"
+
+java -Xmx8g -jar $hts_gatk -T GenotypeGVCFs -l INFO -R $hts_reference_seq --dbsnp $hts_dbsnp_file -L $hts_target_file -o $NAME.raw.vcf.gz `cat $NAME.gvcfs.txt` &> $hts_logs_dir/$NAME.genotypegvcfs.log
 
 cp $NAME.raw.vcf* $hts_vcf_dir/
 
